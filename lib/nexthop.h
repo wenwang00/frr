@@ -86,6 +86,9 @@ struct nexthop {
 	(CHECK_FLAG(flags, NEXTHOP_FLAG_ACTIVE)                                \
 	 && !CHECK_FLAG(flags, NEXTHOP_FLAG_DUPLICATE))
 
+	uint8_t nh_flags;
+#define NEXTHOP_FLAG_EVPN_RVTEP (1 << 0) /* EVPN remote vtep nexthop */
+
 	/* Nexthop address */
 	union {
 		union g_addr gate;

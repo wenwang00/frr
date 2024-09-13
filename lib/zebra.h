@@ -226,6 +226,10 @@ struct in_pktinfo {
 
 #define strmatch(a,b) (!strcmp((a), (b)))
 
+/* Zebra message flags */
+
+#define ZEBRA_FLAG_LOCAL_SID_ROUTE 0x01
+
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define htonll(x) (((uint64_t)htonl((x)&0xFFFFFFFF) << 32) | htonl((x) >> 32))
 #define ntohll(x) (((uint64_t)ntohl((x)&0xFFFFFFFF) << 32) | ntohl((x) >> 32))

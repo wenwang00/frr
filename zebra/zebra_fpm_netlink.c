@@ -264,6 +264,8 @@ static int netlink_route_info_fill(struct netlink_route_info *ri, int cmd,
 	ri->nlmsg_pid = pid;
 
 	ri->nlmsg_type = cmd;
+	// ri->rtm_table = table_info->table_id;
+	ri->rtm_table = zvrf_id(rib_dest_vrf(dest));
 	ri->rtm_protocol = RTPROT_UNSPEC;
 
 	/*

@@ -150,6 +150,7 @@ static int zebra_vrf_enable(struct vrf *vrf)
 
 	/* Kick off any VxLAN-EVPN processing. */
 	zebra_vxlan_vrf_enable(zvrf);
+	zebra_srv6_vrf_enable(zvrf);
 
 	return 0;
 }

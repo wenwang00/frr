@@ -570,6 +570,12 @@ struct zapi_route {
  */
 #define ZEBRA_FLAG_OUTOFSYNC          0x400
 
+/*
+ * This flag lets us know that the route entry is set to bypass
+ * kernel for some reason (e.g. route-map, etc)
+ */
+#define ZEBRA_FLAG_KERNEL_BYPASS 0x800
+
 	/* The older XXX_MESSAGE flags live here */
 	uint32_t message;
 
@@ -1088,6 +1094,9 @@ extern struct interface *zebra_interface_link_params_read(struct stream *s,
 							  bool *changed);
 extern size_t zebra_interface_link_params_write(struct stream *,
 						struct interface *);
+
+extern int zapi_srv6_locator_sid_encode(struct stream *s,
+					struct srv6_locator *loc);
 extern enum zclient_send_status
 zclient_send_get_label_chunk(struct zclient *zclient, uint8_t keep,
 			     uint32_t chunk_size, uint32_t base);

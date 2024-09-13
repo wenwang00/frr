@@ -77,8 +77,8 @@ struct host {
 /* List of CLI nodes. Please remember to update the name array in command.c. */
 /* clang-format off */
 enum node_type {
-	AUTH_NODE,		 /* Authentication mode of vty interface. */
-	VIEW_NODE,		 /* View node. Default mode of vty interface. */
+	AUTH_NODE,		/* Authentication mode of vty interface. */
+	VIEW_NODE,		/* View node. Default mode of vty interface. */
 	AUTH_ENABLE_NODE,	/* Authentication mode for change enable. */
 	ENABLE_NODE,		 /* Enable node. */
 	CONFIG_NODE,		 /* Config node. Default mode of config file. */
@@ -134,36 +134,37 @@ enum node_type {
 	ISIS_FLEX_ALGO_NODE,    /* ISIS Flex Algo mode */
 	ACCESS_NODE,		 /* Access list node. */
 	ACCESS_IPV6_NODE,	/* Access list node. */
-	ACCESS_MAC_NODE,	 /* MAC access list node*/
-	AS_LIST_NODE,		 /* AS list node. */
-	COMMUNITY_LIST_NODE,     /* Community list node. */
-	COMMUNITY_ALIAS_NODE, /* Community alias node. */
-	RMAP_NODE,		 /* Route map node. */
-	PBRMAP_NODE,		 /* PBR map node. */
-	SMUX_NODE,		 /* SNMP configuration node. */
-	DUMP_NODE,		 /* Packet dump node. */
-	FORWARDING_NODE,	 /* IP forwarding node. */
-	PROTOCOL_NODE,		 /* protocol filtering node */
-	MPLS_NODE,		 /* MPLS config node */
-	PW_NODE,		 /* Pseudowire config node */
-	SEGMENT_ROUTING_NODE,	 /* Segment routing root node */
-	SR_TRAFFIC_ENG_NODE,	 /* SR Traffic Engineering node */
-	SR_SEGMENT_LIST_NODE,	 /* SR segment list config node */
-	SR_POLICY_NODE,		 /* SR policy config node */
-	SR_CANDIDATE_DYN_NODE,	 /* SR dynamic candidate path config node */
-	PCEP_NODE,	 	 /* PCEP node */
-	PCEP_PCE_CONFIG_NODE,	 /* PCE shared configuration node */
-	PCEP_PCE_NODE,		 /* PCE configuration node */
-	PCEP_PCC_NODE,		 /* PCC configuration node */
-	SRV6_NODE,		 /* SRv6 node */
-	SRV6_LOCS_NODE,		 /* SRv6 locators node */
-	SRV6_LOC_NODE,		 /* SRv6 locator node */
+	ACCESS_MAC_NODE,	/* MAC access list node*/
+	AS_LIST_NODE,		/* AS list node. */
+	COMMUNITY_LIST_NODE,	/* Community list node. */
+	COMMUNITY_ALIAS_NODE,	/* Community alias node. */
+	RMAP_NODE,		/* Route map node. */
+	PBRMAP_NODE,		/* PBR map node. */
+	SMUX_NODE,		/* SNMP configuration node. */
+	DUMP_NODE,		/* Packet dump node. */
+	FORWARDING_NODE,	/* IP forwarding node. */
+	PROTOCOL_NODE,		/* protocol filtering node */
+	MPLS_NODE,		/* MPLS config node */
+	PW_NODE,		/* Pseudowire config node */
+	SEGMENT_ROUTING_NODE,	/* Segment routing root node */
+	SR_TRAFFIC_ENG_NODE,	/* SR Traffic Engineering node */
+	SR_SEGMENT_LIST_NODE,	/* SR segment list config node */
+	SR_POLICY_NODE,		/* SR policy config node */
+	SR_CANDIDATE_DYN_NODE,	/* SR dynamic candidate path config node */
+	PCEP_NODE,		/* PCEP node */
+	PCEP_PCE_CONFIG_NODE,	/* PCE shared configuration node */
+	PCEP_PCE_NODE,		/* PCE configuration node */
+	PCEP_PCC_NODE,		/* PCC configuration node */
+	SRV6_NODE,		/* SRv6 node */
+	SRV6_LOCS_NODE,		/* SRv6 locators node */
+	SRV6_LOC_NODE,		/* SRv6 locator node */
+	SRV6_PREFIX_NODE,	/* SRv6 locator prefix node */
 	SRV6_ENCAP_NODE,		 /* SRv6 encapsulation node */
 	SRV6_SID_FORMATS_NODE,		 /* SRv6 SID formats config node */
 	SRV6_SID_FORMAT_USID_F3216_NODE,		 /* SRv6 uSID f3216 format config node */
 	SRV6_SID_FORMAT_UNCOMPRESSED_F4024_NODE,		 /* SRv6 uncompressed f4024 format config node */
-	VTY_NODE,		 /* Vty node. */
-	FPM_NODE,		 /* Dataplane FPM node. */
+	VTY_NODE,		/* Vty node. */
+	FPM_NODE,		/* Dataplane FPM node. */
 	LINK_PARAMS_NODE,	/* Link-parameters node */
 	BGP_EVPN_VNI_NODE,       /* BGP EVPN VNI */
 	RPKI_NODE,     /* RPKI node for configuration of RPKI cache server

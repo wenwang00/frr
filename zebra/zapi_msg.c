@@ -2774,6 +2774,42 @@ int zsend_client_close_notify(struct zserv *client, struct zserv *closed_client)
 	return zserv_send_message(client, s);
 }
 
+int zsend_srv6_manager_get_locator_sid_response(struct zserv *client,
+						vrf_id_t vrf_id,
+						struct srv6_locator *loc,
+						struct seg6_sid *sid)
+{
+
+	struct stream *s = stream_new(ZEBRA_MAX_PACKET_SIZ);
+
+	zclient_create_header(s, ZEBRA_SRV6_MANAGER_GET_LOCATOR_SID, vrf_id);
+	zapi_srv6_locator_sid_encode(s, loc);
+	stream_putw_at(s, 0, stream_get_endp(s));
+	return zserv_send_message(client, s);
+}
+
+int zsend_srv6_manager_del_sid(struct zserv *client, vrf_id_t vrf_id,
+			       struct srv6_locator *loc, struct seg6_sid *sid)
+{
+
+	struct stream *s = stream_new(ZEBRA_MAX_PACKET_SIZ);
+
+	zclient_create_header(s, ZEBRA_SRV6_MANAGER_RELEASE_LOCATOR_SID,
+			      vrf_id);
+
+	stream_putw(s, strlen(loc->name));
+	stream_put(s, loc->name, strlen(loc->name));
+
+	stream_putl(s, 1);
+	stream_putw(s, sid->ipv6Addr.prefixlen);
+	stream_put(s, &sid->ipv6Addr.prefix, sizeof(sid->ipv6Addr.prefix));
+	stream_putl(s, sid->sidaction);
+	stream_putw(s, strlen(sid->vrfName));
+	stream_put(s, sid->vrfName, strlen(sid->vrfName));
+	stream_putw_at(s, 0, stream_get_endp(s));
+	return zserv_send_message(client, s);
+}
+
 int zsend_srv6_manager_get_locator_chunk_response(struct zserv *client,
 						  vrf_id_t vrf_id,
 						  struct srv6_locator *loc)
@@ -3134,6 +3170,36 @@ static void zread_srv6_manager_get_locator(struct zserv *client,
 	srv6_manager_get_locator_call(&locator, client, locator_name);
 
 stream_failure:
+	return;
+}
+
+static void zread_srv6_manager_get_locator_sid(struct zserv *client,
+					       struct stream *msg,
+					       vrf_id_t vrf_id)
+{
+	struct stream *s = msg;
+	uint16_t len;
+	char locator_name[SRV6_LOCNAME_SIZE] = {0};
+
+	/* Get data. */
+	STREAM_GETW(s, len);
+	STREAM_GET(locator_name, s, len);
+
+	/* call hook to get a chunk using wrapper */
+	struct srv6_locator *loc = NULL;
+	srv6_manager_get_locator_sid_call(&loc, client, locator_name, vrf_id);
+
+stream_failure:
+	return;
+}
+
+static void zread_srv6_manager_get_locator_all(struct zserv *client,
+					       struct stream *msg,
+					       vrf_id_t vrf_id)
+{
+	/* call hook to get a chunk using wrapper */
+	srv6_manager_get_locator_all_call(client, vrf_id);
+
 	return;
 }
 
