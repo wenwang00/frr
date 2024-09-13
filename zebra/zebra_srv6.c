@@ -942,8 +942,7 @@ extern bool zebra_srv6_local_sid_get_format(struct srv6_locator *locator)
 	return false;
 }
 
-void zebra_srv6_local_sid_add(struct srv6_locator *locator,
-			      struct seg6_sid *sid)
+void zebra_srv6_local_sid_add(struct srv6_locator *locator, struct seg6_sid *sid)
 {
 	enum seg6local_action_t act;
 	struct seg6local_context ctx = {};
@@ -951,24 +950,36 @@ void zebra_srv6_local_sid_add(struct srv6_locator *locator,
 	struct vrf *vrf;
 	struct zebra_vrf *zvrf;
 
-	combine_sid(locator, &sid->ipv6Addr.prefix, &result_sid);
+    combine_sid(locator, &sid->ipv6Addr.prefix, &result_sid);
 
 	vrf = vrf_lookup_by_name(sid->vrfName);
 	if (!vrf)
 		return;
 
 	zvrf = vrf->info;
-	ctx.table = zvrf->table_id;
+    ctx.table = zvrf->table_id;
 	act = sid->sidaction;
-	ctx.block_bits_length = locator->block_bits_length;
-	ctx.node_bits_length = locator->node_bits_length;
-	ctx.function_bits_length = locator->function_bits_length;
-	ctx.argument_bits_length = locator->argument_bits_length;
-	strncpy(ctx.vrfName, sid->vrfName, VRF_NAMSIZ + 1);
-
-	if (CHECK_FLAG(vrf->status, VRF_ACTIVE)) {
+    ctx.block_bits_length = locator->block_bits_length;
+    ctx.node_bits_length = locator->node_bits_length;
+    ctx.function_bits_length = locator->function_bits_length;
+    ctx.argument_bits_length = locator->argument_bits_length;
+    strncpy(ctx.vrfName, sid->vrfName, VRF_NAMSIZ + 1);
+	if(sid->ifname)
+		strncpy(ctx.ifname,sid->ifname,INTERFACE_NAMSIZ);
+	
+	if(sid->nexthop.ipa_type==IPADDR_V4)
+	{
+		ctx.nh4 = sid->nexthop.ipaddr_v4; 
+	}
+	else if(sid->nexthop.ipa_type == IPADDR_V6)
+	{
+		ctx.nh6 = sid->nexthop.ipaddr_v6;
+	}
+	
+    if (CHECK_FLAG(vrf->status, VRF_ACTIVE)) {
 		zebra_route_add(&result_sid, vrf, act, &ctx);
 	}
+
 }
 
 void zebra_srv6_local_sid_del(struct srv6_locator *locator,
