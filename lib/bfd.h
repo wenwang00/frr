@@ -29,8 +29,10 @@ extern "C" {
 #define BFD_STATUS_DOWN       (1 << 1) /* BFD session status is down */
 #define BFD_STATUS_UP         (1 << 2) /* BFD session status is up */
 #define BFD_STATUS_ADMIN_DOWN (1 << 3) /* BFD session is admin down */
+#define BFD_STATUS_DEL        (1 << 4) /* BFD session is deleted, reserved for sbfd*/
 
 #define BFD_PROFILE_NAME_LEN 64
+#define BFD_NAME_SIZE 255
 
 const char *bfd_get_status_str(int status);
 
@@ -415,6 +417,83 @@ struct bfd_session_arg {
 	uint32_t min_tx;
 	/** Detection multiplier. */
 	uint32_t detection_multiplier;
+	/* bfd session name*/
+	char bfd_name[BFD_NAME_SIZE +1];
+};
+
+/** Events definitions. */
+enum bfd_session_event {
+	/** Remove the BFD session configuration. */
+	BSE_UNINSTALL,
+	/** Install the BFD session configuration. */
+	BSE_INSTALL,
+};
+
+/**
+ * BFD source selection result cache.
+ *
+ * This structure will keep track of the result based on the destination
+ * prefix. When the result changes all related BFD sessions with automatic
+ * source will be updated.
+ */
+struct bfd_source_cache {
+	/** Address VRF belongs. */
+	vrf_id_t vrf_id;
+	/** Destination network address. */
+	struct prefix address;
+	/** Source selected. */
+	struct prefix source;
+	/** Is the source address valid? */
+	bool valid;
+	/** BFD sessions using this. */
+	size_t refcount;
+
+	SLIST_ENTRY(bfd_source_cache) entry;
+};
+SLIST_HEAD(bfd_source_list, bfd_source_cache);
+
+/**
+ * Data structure to do the necessary tricks to hide the BFD protocol
+ * integration internals.
+ */
+struct bfd_session_params {
+	/** Contains the session parameters and more. */
+	struct bfd_session_arg args;
+	/** Contains the session state. */
+	struct bfd_session_status bss;
+	/** Protocol implementation status update callback. */
+	bsp_status_update updatecb;
+	/** Protocol implementation custom data pointer. */
+	void *arg;
+
+	/**
+	 * Next event.
+	 *
+	 * This variable controls what action to execute when the command batch
+	 * finishes. Normally we'd use `thread_add_event` value, however since
+	 * that function is going to be called multiple times and the value
+	 * might be different we'll use this variable to keep track of it.
+	 */
+	enum bfd_session_event lastev;
+	/**
+	 * BFD session configuration event.
+	 *
+	 * Multiple actions might be asked during a command batch (either via
+	 * configuration load or northbound batch), so we'll use this to
+	 * install/uninstall the BFD session parameters only once.
+	 */
+	struct thread *installev;
+
+	/** BFD session installation state. */
+	bool installed;
+
+	/** Automatic source selection. */
+	bool auto_source;
+	/** Currently selected source. */
+	struct bfd_source_cache *source_cache;
+
+	/** Global BFD paramaters list. */
+	TAILQ_ENTRY(bfd_session_params) entry;
 };
 
 /**
@@ -463,6 +542,10 @@ extern bool bfd_protocol_integration_shutting_down(void);
  */
 extern int bfd_nht_update(const struct prefix *match,
 			  const struct zapi_route *route);
+extern void bfd_name_register(struct bfd_session_params *bsp) ;
+
+DECLARE_HOOK(bfd_state_change_hook, (char *bfd_name, int state,int remote_cbit),(bfd_name, state, remote_cbit));
+DECLARE_HOOK(sbfd_state_change_hook, (char *bfd_name, int state,int remote_cbit),(bfd_name, state));
 
 extern bool bfd_session_is_down(const struct bfd_session_params *session);
 

@@ -23,7 +23,6 @@
 #include "lib/version.h"
 #include "lib/command.h"
 
-
 /*
  * FRR related code.
  */
@@ -150,6 +149,7 @@ const struct bfd_diag_str_list diag_list[] = {
 	{.str = "concatenated-path-down", .type = BD_CONCATPATH_DOWN},
 	{.str = "administratively-down", .type = BD_ADMIN_DOWN},
 	{.str = "reverse-concat-path-down", .type = BD_REVCONCATPATH_DOWN},
+	{.str = "echo-detect-failed", .type = BD_ECHO_DETECT_FAILED},
 	{.str = NULL},
 };
 
@@ -318,6 +318,7 @@ static void bg_init(void)
 
 	memcpy(&bglobal.bfdd_privs, &bfdd_privs,
 	       sizeof(bfdd_privs));
+	bglobal.debug_peer_event = true;
 }
 
 int main(int argc, char *argv[])
@@ -359,7 +360,7 @@ int main(int argc, char *argv[])
 	bfd_vrf_init();
 
 	access_list_init();
-
+	
 	/* Initialize zebra connection. */
 	bfdd_zclient_init(&bglobal.bfdd_privs);
 

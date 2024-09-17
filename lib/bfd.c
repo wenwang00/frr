@@ -18,88 +18,15 @@
 #include "table.h"
 #include "vty.h"
 #include "bfd.h"
+#include "bfdd/bfd.h"
 
 DEFINE_MTYPE_STATIC(LIB, BFD_INFO, "BFD info");
 DEFINE_MTYPE_STATIC(LIB, BFD_SOURCE, "BFD source cache");
-
+DEFINE_HOOK(bfd_state_change_hook, (char *bfd_name, int state,int remote_cbit),(bfd_name, state, remote_cbit));
+DEFINE_HOOK(sbfd_state_change_hook, (char *bfd_name, int state),(bfd_name, state));
 /**
  * BFD protocol integration configuration.
  */
-
-/** Events definitions. */
-enum bfd_session_event {
-	/** Remove the BFD session configuration. */
-	BSE_UNINSTALL,
-	/** Install the BFD session configuration. */
-	BSE_INSTALL,
-};
-
-/**
- * BFD source selection result cache.
- *
- * This structure will keep track of the result based on the destination
- * prefix. When the result changes all related BFD sessions with automatic
- * source will be updated.
- */
-struct bfd_source_cache {
-	/** Address VRF belongs. */
-	vrf_id_t vrf_id;
-	/** Destination network address. */
-	struct prefix address;
-	/** Source selected. */
-	struct prefix source;
-	/** Is the source address valid? */
-	bool valid;
-	/** BFD sessions using this. */
-	size_t refcount;
-
-	SLIST_ENTRY(bfd_source_cache) entry;
-};
-SLIST_HEAD(bfd_source_list, bfd_source_cache);
-
-/**
- * Data structure to do the necessary tricks to hide the BFD protocol
- * integration internals.
- */
-struct bfd_session_params {
-	/** Contains the session parameters and more. */
-	struct bfd_session_arg args;
-	/** Contains the session state. */
-	struct bfd_session_status bss;
-	/** Protocol implementation status update callback. */
-	bsp_status_update updatecb;
-	/** Protocol implementation custom data pointer. */
-	void *arg;
-
-	/**
-	 * Next event.
-	 *
-	 * This variable controls what action to execute when the command batch
-	 * finishes. Normally we'd use `event_add_event` value, however since
-	 * that function is going to be called multiple times and the value
-	 * might be different we'll use this variable to keep track of it.
-	 */
-	enum bfd_session_event lastev;
-	/**
-	 * BFD session configuration event.
-	 *
-	 * Multiple actions might be asked during a command batch (either via
-	 * configuration load or northbound batch), so we'll use this to
-	 * install/uninstall the BFD session parameters only once.
-	 */
-	struct event *installev;
-
-	/** BFD session installation state. */
-	bool installed;
-
-	/** Automatic source selection. */
-	bool auto_source;
-	/** Currently selected source. */
-	struct bfd_source_cache *source_cache;
-
-	/** Global BFD paramaters list. */
-	TAILQ_ENTRY(bfd_session_params) entry;
-};
 
 struct bfd_sessions_global {
 	/**
@@ -140,12 +67,16 @@ static void bfd_source_cache_put(struct bfd_session_params *session);
  */
 static struct interface *bfd_get_peer_info(struct stream *s, struct prefix *dp,
 					   struct prefix *sp, int *status,
-					   int *remote_cbit, vrf_id_t vrf_id)
+					   int *remote_cbit, uint32_t *srte_color, char *seglist_name,
+					   vrf_id_t vrf_id, char *bfd_name, uint32_t *bfd_mode)
 {
 	unsigned int ifindex;
 	struct interface *ifp = NULL;
 	int plen;
 	int local_remote_cbit;
+	uint32_t color,bfdmode;
+	uint8_t seglist_name_len;
+	uint8_t bfd_name_len = 0;
 
 	/*
 	 * If the ifindex lookup fails the
@@ -192,6 +123,16 @@ static struct interface *bfd_get_peer_info(struct stream *s, struct prefix *dp,
 	STREAM_GETC(s, local_remote_cbit);
 	if (remote_cbit)
 		*remote_cbit = local_remote_cbit;
+
+	STREAM_GETC(s, bfd_name_len);
+	if(bfd_name_len) {
+		STREAM_GET(bfd_name, s, bfd_name_len);
+		*(bfd_name+bfd_name_len) = 0;
+	}
+
+	STREAM_GETL(s, bfdmode);
+	*bfd_mode = bfdmode;
+
 	return ifp;
 
 stream_failure:
@@ -216,6 +157,8 @@ const char *bfd_get_status_str(int status)
 		return "Up";
 	case BFD_STATUS_ADMIN_DOWN:
 		return "Admin Down";
+	case BFD_STATUS_DEL:
+		return "Del";	
 	case BFD_STATUS_UNKNOWN:
 	default:
 		return "Unknown";
@@ -293,7 +236,7 @@ int zclient_bfd_command(struct zclient *zc, struct bfd_session_arg *args)
 {
 	struct stream *s;
 	size_t addrlen;
-
+	int len;
 	/* Individual reg/dereg messages are suppressed during shutdown. */
 	if (bsglobal.shutting_down) {
 		if (bsglobal.debugging)
@@ -317,6 +260,10 @@ int zclient_bfd_command(struct zclient *zc, struct bfd_session_arg *args)
 	zclient_create_header(s, args->command, args->vrf_id);
 	stream_putl(s, getpid());
 
+	stream_putc(s, args->bfd_name[0] ? strlen(args->bfd_name) : 0);
+	if (args->bfd_name[0])
+			stream_put(s, args->bfd_name, strlen(args->bfd_name));
+		
 	/* Encode destination address. */
 	stream_putw(s, args->family);
 	addrlen = (args->family == AF_INET) ? sizeof(struct in_addr)
@@ -363,6 +310,7 @@ int zclient_bfd_command(struct zclient *zc, struct bfd_session_arg *args)
 	stream_putc(s, args->profilelen);
 	if (args->profilelen)
 		stream_put(s, args->profile, args->profilelen);
+
 #else /* PTM BFD */
 	/* Encode timers if this is a registration message. */
 	if (args->command != ZEBRA_BFD_DEST_DEREGISTER) {
@@ -736,6 +684,7 @@ void bfd_sess_install(struct bfd_session_params *bsp)
 	event_add_event(bsglobal.tm, _bfd_sess_send, bsp, 0, &bsp->installev);
 }
 
+
 void bfd_sess_uninstall(struct bfd_session_params *bsp)
 {
 	bsp->lastev = BSE_UNINSTALL;
@@ -912,6 +861,10 @@ int zclient_bfd_session_update(ZAPI_CALLBACK_ARGS)
 	struct prefix dp;
 	struct prefix sp;
 	char ifstr[128], cbitstr[32];
+	uint32_t srte_color = 0;
+	uint32_t bfd_mode = 0;
+	char seglist_name[64] = {0};
+    char bfd_name[BFD_NAME_SIZE+1] = {0};
 
 	if (!zclient->bfd_integration)
 		return 0;
@@ -920,8 +873,8 @@ int zclient_bfd_session_update(ZAPI_CALLBACK_ARGS)
 	if (bsglobal.shutting_down)
 		return 0;
 
-	ifp = bfd_get_peer_info(zclient->ibuf, &dp, &sp, &state, &remote_cbit,
-				vrf_id);
+	ifp = bfd_get_peer_info(zclient->ibuf, &dp, &sp, &state, &remote_cbit,  &srte_color, seglist_name,
+				vrf_id, bfd_name, &bfd_mode);
 	/*
 	 * When interface lookup fails or an invalid stream is read, we must
 	 * not proceed otherwise it will trigger an assertion while checking
@@ -960,7 +913,24 @@ int zclient_bfd_session_update(ZAPI_CALLBACK_ARGS)
 
 	/* Cache current time to avoid multiple monotime clock calls. */
 	now = monotime(NULL);
+    
+	if (bfd_name[0])
+	{
+		if ((bfd_mode == BFD_MODE_TYPE_SBFD_ECHO) || (bfd_mode == BFD_MODE_TYPE_SBFD_INIT))
+		{
+			hook_call(sbfd_state_change_hook, bfd_name, state);
+			if (bsglobal.debugging)
+				zlog_debug("%s:   sessions updated: %s", __func__,  bfd_name);
+		}
+		else
+		{
+			hook_call(bfd_state_change_hook, bfd_name, state, remote_cbit);
+			if (bsglobal.debugging)
+				zlog_debug("%s:   sessions updated: %s", __func__,  bfd_name);
+		}
 
+		return 0;
+	}
 	/* Notify all matching sessions about update. */
 	TAILQ_FOREACH_SAFE (bsp, &bsglobal.bsplist, entry, bspn) {
 		/* Skip not installed entries. */
@@ -989,6 +959,7 @@ int zclient_bfd_session_update(ZAPI_CALLBACK_ARGS)
 		    && memcmp(&sp.u, &i6a_zero, addrlen) != 0
 		    && memcmp(&bsp->args.src, &sp.u, addrlen) != 0)
 			continue;
+
 		/* No session state change. */
 		if ((int)bsp->bss.state == state)
 			continue;
@@ -1078,6 +1049,10 @@ bool bfd_protocol_integration_shutting_down(void)
 	return bsglobal.shutting_down;
 }
 
+void bfd_name_register(struct bfd_session_params *bsp) {
+	bsp->args.command = ZEBRA_BFD_DEST_REGISTER;
+	zclient_bfd_command(bsglobal.zc, &bsp->args);
+}
 /*
  * BFD automatic source selection
  *
