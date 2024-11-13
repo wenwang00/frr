@@ -691,7 +691,7 @@ static bool zebra_need_to_create_pic(struct nexthop *nh)
 {
 	if (!fpm_pic_nexthop)
 		return false;
-	if (nh && nh->nh_srv6 && !sid_zero(nh->nh_srv6->seg6_segs))
+	if (nh && nh->nh_srv6 && nh->nh_srv6->seg6_segs && !sid_zero(nh->nh_srv6->seg6_segs))
 		return true;
 	return false;
 }
