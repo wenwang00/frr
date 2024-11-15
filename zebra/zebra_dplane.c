@@ -774,9 +774,9 @@ static void dplane_ctx_free_internal(struct zebra_dplane_ctx *ctx)
 	case DPLANE_OP_NH_INSTALL:
 	case DPLANE_OP_NH_UPDATE:
 	case DPLANE_OP_NH_DELETE:
-	case DPLANE_OP_PIC_CONTEXT_INSTALL:
-	case DPLANE_OP_PIC_CONTEXT_UPDATE:
-	case DPLANE_OP_PIC_CONTEXT_DELETE: {
+	case DPLANE_OP_PIC_NH_INSTALL:
+	case DPLANE_OP_PIC_NH_UPDATE:
+	case DPLANE_OP_PIC_NH_DELETE: {
 		if (ctx->u.rinfo.nhe.ng.nexthop) {
 			/* This deals with recursive nexthops too */
 			nexthops_free(ctx->u.rinfo.nhe.ng.nexthop);

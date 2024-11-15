@@ -876,8 +876,8 @@ struct nhg_hash_entry;
 /*
  * Enqueue a nexthop change operation for the dataplane.
  */
-enum zebra_dplane_result dplane_pic_context_add(struct nhg_hash_entry *nhe);
-enum zebra_dplane_result dplane_pic_context_delete(struct nhg_hash_entry *nhe);
+enum zebra_dplane_result dplane_pic_nh_add(struct nhg_hash_entry *nhe);
+enum zebra_dplane_result dplane_pic_nh_delete(struct nhg_hash_entry *nhe);
 enum zebra_dplane_result dplane_nexthop_add(struct nhg_hash_entry *nhe);
 enum zebra_dplane_result dplane_nexthop_update(struct nhg_hash_entry *nhe);
 enum zebra_dplane_result dplane_nexthop_delete(struct nhg_hash_entry *nhe);
