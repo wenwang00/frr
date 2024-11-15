@@ -3464,7 +3464,7 @@ void zebra_nhg_uninstall_kernel(struct nhg_hash_entry *nhe)
 		if (CHECK_FLAG(nhe->flags, NEXTHOP_GROUP_PIC_NHT) || !nhe->pic_nhe)
 			ret = dplane_nexthop_delete(nhe);
 		else
-			ret = dplane_pic_context_delete(nhe);
+			ret = dplane_pic_nh_delete(nhe);
 
 		switch (ret) {
 		case ZEBRA_DPLANE_REQUEST_QUEUED:
@@ -3502,7 +3502,7 @@ void zebra_nhg_dplane_result(struct zebra_dplane_ctx *ctx)
 			"Nexthop dplane ctx %p, op %s, nexthop ID (%u), result %s",
 			ctx, dplane_op2str(op), id, dplane_res2str(status));
 
-	if (op == DPLANE_OP_NH_DELETE || op == DPLANE_OP_PIC_CONTEXT_DELETE) {
+	if (op == DPLANE_OP_NH_DELETE || op == DPLANE_OP_PIC_NH_DELETE) {
 		if (status != ZEBRA_DPLANE_REQUEST_SUCCESS)
 			flog_err(
 				EC_ZEBRA_DP_DELETE_FAIL,
