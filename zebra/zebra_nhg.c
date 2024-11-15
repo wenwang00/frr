@@ -3405,7 +3405,7 @@ void zebra_nhg_install_kernel(struct nhg_hash_entry *nhe, uint8_t type)
 	enum zebra_dplane_result ret;
 
 	/* Resolve it first */
-	nhe = zebra_nhg_resolve(nhe);
+	//nhe = zebra_nhg_resolve(nhe);
 
 	if (zebra_nhg_set_valid_if_active(nhe)) {
 		if (IS_ZEBRA_DEBUG_NHG_DETAIL)
@@ -3435,10 +3435,10 @@ void zebra_nhg_install_kernel(struct nhg_hash_entry *nhe, uint8_t type)
 		if (!ZEBRA_NHG_CREATED(nhe))
 			nhe->type = ZEBRA_ROUTE_NHG;
 
-		if (CHECK_FLAG(nhe->flags, NEXTHOP_GROUP_PIC_NHT) || !nhe->pic_nhe)
-			ret = dplane_nexthop_add(nhe);
+		if (CHECK_FLAG(nhe->flags, NEXTHOP_GROUP_PIC_NHT))
+			ret = dplane_pic_nh_add(nhe);
 		else
-			ret = dplane_pic_context_add(nhe);
+			ret = dplane_nexthop_add(nhe);
 
 		switch (ret) {
 		case ZEBRA_DPLANE_REQUEST_QUEUED:
@@ -3511,7 +3511,7 @@ void zebra_nhg_dplane_result(struct zebra_dplane_ctx *ctx)
 
 		/* We already free'd the data, nothing to do */
 	} else if (op == DPLANE_OP_NH_INSTALL || op == DPLANE_OP_NH_UPDATE ||
-		   op == DPLANE_OP_PIC_CONTEXT_INSTALL || op == DPLANE_OP_PIC_CONTEXT_UPDATE) {
+		   op == DPLANE_OP_PIC_NH_INSTALL || op == DPLANE_OP_PIC_NH_UPDATE) {
 		nhe = zebra_nhg_lookup_id(id);
 
 		if (!nhe) {

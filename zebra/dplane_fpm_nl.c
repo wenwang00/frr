@@ -911,8 +911,8 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 	 */
 	if ((!fnc->use_nhg) &&
 	    (op == DPLANE_OP_NH_DELETE || op == DPLANE_OP_NH_INSTALL || op == DPLANE_OP_NH_UPDATE ||
-	     op == DPLANE_OP_PIC_CONTEXT_DELETE || op == DPLANE_OP_PIC_CONTEXT_INSTALL ||
-	     op == DPLANE_OP_PIC_CONTEXT_UPDATE))
+	     op == DPLANE_OP_PIC_NH_DELETE || op == DPLANE_OP_PIC_NH_INSTALL ||
+	     op == DPLANE_OP_PIC_NH_UPDATE))
 		return 0;
 
 	nl_buf_len = 0;
@@ -1060,9 +1060,9 @@ static int fpm_nl_enqueue(struct fpm_nl_ctx *fnc, struct zebra_dplane_ctx *ctx)
 	case DPLANE_OP_NONE:
 	case DPLANE_OP_STARTUP_STAGE:
 	case DPLANE_OP_VLAN_INSTALL:
-	case DPLANE_OP_PIC_CONTEXT_DELETE:
-	case DPLANE_OP_PIC_CONTEXT_INSTALL:
-	case DPLANE_OP_PIC_CONTEXT_UPDATE:
+	case DPLANE_OP_PIC_NH_DELETE:
+	case DPLANE_OP_PIC_NH_INSTALL:
+	case DPLANE_OP_PIC_NH_UPDATE:
 		break;
 
 	}

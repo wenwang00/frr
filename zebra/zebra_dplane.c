@@ -137,6 +137,7 @@ struct dplane_route_info {
 
 	/* Nexthop hash entry info */
 	struct dplane_nexthop_info nhe;
+	struct dplane_nexthop_info unresolved_nhe;
 
 	/* Nexthops */
 	uint32_t zd_nhg_id;
@@ -1071,12 +1072,12 @@ const char *dplane_op2str(enum dplane_op_e op)
 		return "NH_UPDATE";
 	case DPLANE_OP_NH_DELETE:
 		return "NH_DELETE";
-	case DPLANE_OP_PIC_CONTEXT_INSTALL:
-		return "PIC_CONTEXT_INSTALL";
-	case DPLANE_OP_PIC_CONTEXT_UPDATE:
-		return "PIC_CONTEXT_UPDATE";
-	case DPLANE_OP_PIC_CONTEXT_DELETE:
-		return "PIC_CONTEXT_DELETE";
+	case DPLANE_OP_PIC_NH_INSTALL:
+		return "PIC_NH_INSTALL";
+	case DPLANE_OP_PIC_NH_UPDATE:
+		return "PIC_NH_UPDATE";
+	case DPLANE_OP_PIC_NH_DELETE:
+		return "PIC_NH_DELETE";
 
 	case DPLANE_OP_LSP_INSTALL:
 		return "LSP_INSTALL";
@@ -3532,6 +3533,8 @@ int dplane_ctx_route_init(struct zebra_dplane_ctx *ctx, enum dplane_op_e op,
 		ctx->u.rinfo.nhe.old_id = 0;
 		if (nhe->pic_nhe)
 			ctx->u.rinfo.nhe.pic_nhe_id = nhe->pic_nhe->id;
+		ctx->u.rinfo.unresolved_nhe.id = re->nhe->id;
+		ctx->u.rinfo.unresolved_nhe.old_id = 0;
 		/*
 		 * Check if the nhe is installed/queued before doing anything
 		 * with this route.
@@ -4701,21 +4704,21 @@ done:
 	return result;
 }
 
-enum zebra_dplane_result dplane_pic_context_add(struct nhg_hash_entry *nhe)
+enum zebra_dplane_result dplane_pic_nh_add(struct nhg_hash_entry *nhe)
 {
 	enum zebra_dplane_result ret = ZEBRA_DPLANE_REQUEST_FAILURE;
 
 	if (nhe)
-		ret = dplane_nexthop_update_internal(nhe, DPLANE_OP_PIC_CONTEXT_INSTALL);
+		ret = dplane_nexthop_update_internal(nhe, DPLANE_OP_PIC_NH_INSTALL);
 	return ret;
 }
 
-enum zebra_dplane_result dplane_pic_context_delete(struct nhg_hash_entry *nhe)
+enum zebra_dplane_result dplane_pic_nh_delete(struct nhg_hash_entry *nhe)
 {
 	enum zebra_dplane_result ret = ZEBRA_DPLANE_REQUEST_FAILURE;
 
 	if (nhe)
-		ret = dplane_nexthop_update_internal(nhe, DPLANE_OP_PIC_CONTEXT_DELETE);
+		ret = dplane_nexthop_update_internal(nhe, DPLANE_OP_PIC_NH_DELETE);
 
 	return ret;
 }
@@ -6589,9 +6592,9 @@ static void kernel_dplane_log_detail(struct zebra_dplane_ctx *ctx)
 	case DPLANE_OP_NH_INSTALL:
 	case DPLANE_OP_NH_UPDATE:
 	case DPLANE_OP_NH_DELETE:
-	case DPLANE_OP_PIC_CONTEXT_INSTALL:
-	case DPLANE_OP_PIC_CONTEXT_UPDATE:
-	case DPLANE_OP_PIC_CONTEXT_DELETE:
+	case DPLANE_OP_PIC_NH_INSTALL:
+	case DPLANE_OP_PIC_NH_UPDATE:
+	case DPLANE_OP_PIC_NH_DELETE:
 		zlog_debug("ID (%u) Dplane nexthop update ctx %p op %s",
 			   dplane_ctx_get_nhe_id(ctx), ctx,
 			   dplane_op2str(dplane_ctx_get_op(ctx)));
@@ -6797,9 +6800,9 @@ static void kernel_dplane_handle_result(struct zebra_dplane_ctx *ctx)
 	case DPLANE_OP_NH_INSTALL:
 	case DPLANE_OP_NH_UPDATE:
 	case DPLANE_OP_NH_DELETE:
-	case DPLANE_OP_PIC_CONTEXT_INSTALL:
-	case DPLANE_OP_PIC_CONTEXT_UPDATE:
-	case DPLANE_OP_PIC_CONTEXT_DELETE:
+	case DPLANE_OP_PIC_NH_INSTALL:
+	case DPLANE_OP_PIC_NH_UPDATE:
+	case DPLANE_OP_PIC_NH_DELETE:
 		if (res != ZEBRA_DPLANE_REQUEST_SUCCESS)
 			atomic_fetch_add_explicit(
 				&zdplane_info.dg_nexthop_errors, 1,
