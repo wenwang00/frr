@@ -445,6 +445,35 @@ DEFUN_NOSH (locator_prefix,
 	struct listnode *node = NULL;
 	uint8_t expected_prefixlen;
 	struct srv6_sid_format *format;
+	char *prefixstr = NULL;
+	struct prefix_ipv6 prefix;
+	int ret = 0;
+	int idx = 0;
+	int block_bit_len = 0;
+	int node_bit_len = 0;
+	int func_bit_len = 0;
+	int args_bit_len = 0;
+
+	prefixstr = argv[1]->arg;
+	ret = str2prefix_ipv6(prefixstr, &prefix);
+	apply_mask_ipv6(&prefix);
+	if (!ret) {
+		vty_out(vty, "Malformed IPv6 prefix\n");
+		return CMD_WARNING_CONFIG_FAILED;
+	}
+
+	if (argv_find(argv, argc, "block-len", &idx)) {
+		block_bit_len = strtoul(argv[idx + 1]->arg, NULL, 10);
+	}
+	if (argv_find(argv, argc, "node-len", &idx)) {
+		node_bit_len = strtoul(argv[idx + 1]->arg, NULL, 10);
+	}
+	if (argv_find(argv, argc, "func-bits", &idx)) {
+		func_bit_len = strtoul(argv[idx + 1]->arg, NULL, 10);
+	}
+	if (argv_find(argv, argc, "argu-bits", &idx)) {
+		args_bit_len = strtoul(argv[idx + 1]->arg, NULL, 10);
+	}
 
 	locator->prefix = *prefix;
 	func_bit_len = func_bit_len ?: ZEBRA_SRV6_FUNCTION_LENGTH;
