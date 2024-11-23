@@ -475,10 +475,10 @@ DEFUN_NOSH (locator_prefix,
 		args_bit_len = strtoul(argv[idx + 1]->arg, NULL, 10);
 	}
 
-	locator->prefix = *prefix;
+	locator->prefix = prefix;
 	func_bit_len = func_bit_len ?: ZEBRA_SRV6_FUNCTION_LENGTH;
 
-	expected_prefixlen = prefix->prefixlen;
+	expected_prefixlen = prefix.prefixlen;
 	format = locator->sid_format;
 	if (format) {
 		if (strmatch(format->name, SRV6_SID_FORMAT_USID_F3216_NAME))
@@ -492,35 +492,35 @@ DEFUN_NOSH (locator_prefix,
 				SRV6_SID_FORMAT_UNCOMPRESSED_F4024_NODE_LEN;
 	}
 
-	if (prefix->prefixlen != expected_prefixlen) {
+	if (prefix.prefixlen != expected_prefixlen) {
 		vty_out(vty,
 			"%% Locator prefix length '%u' inconsistent with configured format '%s'. Please either use a prefix length that is consistent with the format or change the format.\n",
-			prefix->prefixlen, format->name);
+			prefix.prefixlen, format->name);
 		return CMD_WARNING_CONFIG_FAILED;
 	}
 
 	/* Resolve optional arguments */
 	if (block_bit_len == 0 && node_bit_len == 0) {
-		block_bit_len = prefix->prefixlen -
+		block_bit_len = prefix.prefixlen -
 				ZEBRA_SRV6_LOCATOR_NODE_LENGTH;
 		node_bit_len = ZEBRA_SRV6_LOCATOR_NODE_LENGTH;
 	} else if (block_bit_len == 0) {
-		block_bit_len = prefix->prefixlen - node_bit_len;
+		block_bit_len = prefix.prefixlen - node_bit_len;
 	} else if (node_bit_len == 0) {
-		node_bit_len = prefix->prefixlen - block_bit_len;
+		node_bit_len = prefix.prefixlen - block_bit_len;
 	} else {
-		if (block_bit_len + node_bit_len != prefix->prefixlen) {
+		if (block_bit_len + node_bit_len != prefix.prefixlen) {
 			vty_out(vty,
 				"%% block-len + node-len must be equal to the selected prefix length %d\n",
-				prefix->prefixlen);
+				prefix.prefixlen);
 			return CMD_WARNING_CONFIG_FAILED;
 		}
 	}
 
-	if (prefix->prefixlen + func_bit_len + 0 > 128) {
+	if (prefix.prefixlen + func_bit_len + 0 > 128) {
 		vty_out(vty,
 			"%% prefix-len + function-len + arg-len (%ld) cannot be greater than 128\n",
-			prefix->prefixlen + func_bit_len + 0);
+			prefix.prefixlen + func_bit_len + 0);
 		return CMD_WARNING_CONFIG_FAILED;
 	}
 
@@ -544,7 +544,7 @@ DEFUN_NOSH (locator_prefix,
 
 	if (list_isempty(locator->chunks)) {
 		chunk = srv6_locator_chunk_alloc();
-		chunk->prefix = *prefix;
+		chunk->prefix = prefix;
 		chunk->proto = 0;
 		listnode_add(locator->chunks, chunk);
 	} else {
@@ -555,7 +555,7 @@ DEFUN_NOSH (locator_prefix,
 				struct zserv *client;
 				struct listnode *client_node;
 
-				chunk->prefix = *prefix;
+				chunk->prefix = prefix;
 				for (ALL_LIST_ELEMENTS_RO(zrouter.client_list,
 							  client_node,
 							  client)) {
