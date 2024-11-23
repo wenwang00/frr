@@ -1329,6 +1329,13 @@ static struct cmd_node srv6_loc_node = {
 	.prompt = "%s(config-srv6-locator)# ",
 };
 
+static struct cmd_node srv6_prefix_node = {
+	.name = "srv6-locator-prefix",
+	.node = SRV6_PREFIX_NODE,
+	.parent_node = SRV6_LOC_NODE,
+	.prompt = "%s(config-srv6-locator-prefix)# ",
+};
+
 static struct cmd_node srv6_encap_node = {
 	.name = "srv6-encap",
 	.node = SRV6_ENCAP_NODE,
@@ -1710,6 +1717,22 @@ DEFUNSH(VTYSH_ZEBRA, srv6_locator, srv6_locator_cmd,
 	"Specify locator-name\n")
 {
 	vty->node = SRV6_LOC_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUNSH(VTYSH_ZEBRA, srv6_prefix, srv6_prefix_cmd,
+	"prefix X:X::X:X/M$prefix \
+         [block-len (16-64)$block_bit_len] [node-len (16-64)$node_bit_len] [func-bits (16-80)$func_bit_len]",
+	"Configure SRv6 locator prefix\n"
+	"Specify SRv6 locator prefix\n"
+	"Configure SRv6 locator block length in bits\n"
+	"Specify SRv6 locator block length in bits\n"
+	"Configure SRv6 locator node length in bits\n"
+	"Specify SRv6 locator node length in bits\n"
+	"Configure SRv6 locator function length in bits\n"
+	"Specify SRv6 locator function length in bits\n")
+{
+	vty->node = SRV6_PREFIX_NODE;
 	return CMD_SUCCESS;
 }
 
@@ -2559,6 +2582,14 @@ DEFUNSH(VTYSH_ZEBRA, exit_srv6_loc_config, exit_srv6_loc_config_cmd, "exit",
 {
 	if (vty->node == SRV6_LOC_NODE)
 		vty->node = SRV6_LOCS_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUNSH(VTYSH_ZEBRA, exit_srv6_prefix_config, exit_srv6_prefix_config_cmd,
+	"exit", "Exit from SRv6-locators prefix configuration mode\n")
+{
+	if (vty->node == SRV6_PREFIX_NODE)
+		vty->node = SRV6_LOC_NODE;
 	return CMD_SUCCESS;
 }
 
@@ -5005,6 +5036,7 @@ void vtysh_init_vty(void)
 	install_node(&srv6_node);
 	install_node(&srv6_locs_node);
 	install_node(&srv6_loc_node);
+	install_node(&srv6_prefix_node);
 	install_node(&srv6_encap_node);
 	install_node(&srv6_sid_formats_node);
 	install_node(&srv6_sid_format_usid_f3216_node);
@@ -5451,8 +5483,12 @@ void vtysh_init_vty(void)
 	install_element(SRV6_LOCS_NODE, &exit_srv6_locs_config_cmd);
 	install_element(SRV6_LOCS_NODE, &vtysh_end_all_cmd);
 
+	install_element(SRV6_LOC_NODE, &srv6_prefix_cmd);
 	install_element(SRV6_LOC_NODE, &exit_srv6_loc_config_cmd);
 	install_element(SRV6_LOC_NODE, &vtysh_end_all_cmd);
+
+	install_element(SRV6_PREFIX_NODE, &exit_srv6_prefix_config_cmd);
+	install_element(SRV6_PREFIX_NODE, &vtysh_end_all_cmd);
 
 	install_element(SRV6_ENCAP_NODE, &exit_srv6_encap_cmd);
 	install_element(SRV6_ENCAP_NODE, &vtysh_end_all_cmd);
