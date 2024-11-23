@@ -1721,8 +1721,8 @@ DEFUNSH(VTYSH_ZEBRA, srv6_locator, srv6_locator_cmd,
 }
 
 DEFUNSH(VTYSH_ZEBRA, srv6_prefix, srv6_prefix_cmd,
-	"prefix X:X::X:X/M \
-         [block-len (16-64)] [node-len (16-64)] [func-bits (16-80)]",
+	"prefix X:X::X:X/M$prefix \
+         [block-len (16-64)$block_bit_len] [node-len (16-64)$node_bit_len] [func-bits (16-80)$func_bit_len]",
 	"Configure SRv6 locator prefix\n"
 	"Specify SRv6 locator prefix\n"
 	"Configure SRv6 locator block length in bits\n"
