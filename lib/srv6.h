@@ -388,6 +388,8 @@ json_object *srv6_locator_json(const struct srv6_locator *loc);
 json_object *srv6_locator_detailed_json(const struct srv6_locator *loc);
 json_object *
 srv6_locator_chunk_detailed_json(const struct srv6_locator_chunk *chunk);
+json_object *srv6_locator_sid_detailed_json(const struct srv6_locator *locator,
+					    const struct seg6_sid *sid);
 
 extern struct srv6_sid_format *srv6_sid_format_alloc(const char *name);
 extern void srv6_sid_format_free(struct srv6_sid_format *format);
