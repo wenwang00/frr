@@ -2385,12 +2385,14 @@ static int srv6_manager_release_sid_internal(struct zserv *client,
 		zlog_debug("%s: no SID associated with ctx %s", __func__,
 			   srv6_sid_ctx2str(buf, sizeof(buf), ctx));
 
-	if (ret == 0)
-		zsend_srv6_sid_notify(client, ctx, NULL, 0, 0, locator_name,
-				      ZAPI_SRV6_SID_RELEASED);
-	else
-		zsend_srv6_sid_notify(client, ctx, NULL, 0, 0, locator_name,
-				      ZAPI_SRV6_SID_FAIL_RELEASE);
+	if (client) {
+		if (ret == 0)
+			zsend_srv6_sid_notify(client, ctx, NULL, 0, 0, locator_name,
+					      ZAPI_SRV6_SID_RELEASED);
+		else
+			zsend_srv6_sid_notify(client, ctx, NULL, 0, 0, locator_name,
+					      ZAPI_SRV6_SID_FAIL_RELEASE);
+	}
 
 	return ret;
 }
