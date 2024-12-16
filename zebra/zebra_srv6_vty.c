@@ -1019,16 +1019,19 @@ DEFPY(locator_opcode, locator_opcode_cmd,
       "vrf\n")
 {
 	VTY_DECLVAR_CONTEXT(srv6_locator, locator);
-	struct seg6_sid *sid = NULL;
-	struct listnode *node = NULL;
+	//struct seg6_sid *sid = NULL;
+	//struct listnode *node = NULL;
 	enum seg6local_action_t sidaction = ZEBRA_SEG6_LOCAL_ACTION_UNSPEC;
 	int idx = 0;
 	char *vrfName = NULL;
 	char *prefix = NULL;
 	int ret = 0;
 	struct prefix_ipv6 ipv6prefix = { 0 };
-	struct zserv *client;
-	struct listnode *client_node;
+	//struct zserv *client;
+	//struct listnode *client_node;
+	struct zebra_srv6_sid *srv6_sid = NULL;
+	struct srv6_sid_ctx ctx = {};
+	struct vrf *vrf = NULL;
 
 	if (!locator->status_up) {
 		vty_out(vty, "Missing valid prefix.\n");
@@ -1053,6 +1056,7 @@ DEFPY(locator_opcode, locator_opcode_cmd,
 		vty_out(vty, "Malformed IPv6 prefix\n");
 		return CMD_WARNING_CONFIG_FAILED;
 	}
+	/*
 	for (ALL_LIST_ELEMENTS_RO(locator->sids, node, sid)) {
 		if (IPV6_ADDR_SAME(&sid->ipv6Addr.prefix, &ipv6prefix.prefix)) {
 			vty_out(vty, "Prefix %s is already exist,please delete it first.\n",
@@ -1077,8 +1081,20 @@ DEFPY(locator_opcode, locator_opcode_cmd,
 
 	listnode_add(locator->sids, sid);
 
+	combine_sid(locator, &ipv6prefix, &sid_value);
+	*/
+	ctx.behavior = sidaction;
+	if (vrfName) {
+		vrf = vrf_lookup_by_name(vrfName);
+		if (vrf)
+			ctx.vrf_id = vrf->vrf_id;
+	}
+	srv6_manager_get_sid_call(&srv6_sid, NULL, &ctx, &ipv6prefix, locator->name);
+
+	/*
 	for (ALL_LIST_ELEMENTS_RO(zrouter.client_list, client_node, client))
 		zsend_srv6_manager_get_locator_sid_response(client, VRF_DEFAULT, locator);
+	*/
 	return CMD_SUCCESS;
 }
 
@@ -1090,13 +1106,14 @@ DEFPY(no_locator_opcode,
       "Specify SRv6 locator hex opcode\n")
 {
 	VTY_DECLVAR_CONTEXT(srv6_locator, locator);
-	struct seg6_sid *sid = NULL;
-	struct listnode *node, *next;
+	//struct seg6_sid *sid = NULL;
+	//struct listnode *node, *next;
 	char *prefix = NULL;
 	int ret = 0;
 	struct prefix_ipv6 ipv6prefix = { 0 };
 	struct zserv *client;
 	struct listnode *client_node;
+	struct srv6_sid_ctx ctx = {};
 
 	prefix = argv[2]->arg;
 	ret = str2prefix_ipv6(prefix, &ipv6prefix);
@@ -1104,7 +1121,10 @@ DEFPY(no_locator_opcode,
 		vty_out(vty, "Malformed IPv6 prefix\n");
 		return CMD_WARNING_CONFIG_FAILED;
 	}
+	ctx.nh6 = ipv6prefix;
 
+	srv6_manager_release_sid_call(NULL, &ctx);
+    /*
 	for (ALL_LIST_ELEMENTS(locator->sids, node, next, sid)) {
 		if (IPV6_ADDR_SAME(&sid->ipv6Addr.prefix, &ipv6prefix.prefix)) {
 			for (ALL_LIST_ELEMENTS_RO(zrouter.client_list, client_node, client))
@@ -1114,6 +1134,7 @@ DEFPY(no_locator_opcode,
 			return CMD_SUCCESS;
 		}
 	}
+	*/
 	return CMD_SUCCESS;
 }
 
