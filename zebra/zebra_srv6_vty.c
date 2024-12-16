@@ -67,23 +67,6 @@ static struct cmd_node srv6_prefix_node = { .name = "srv6-locator-prefix",
 					    .parent_node = SRV6_LOC_NODE,
 					    .prompt = "%s(config-srv6-locator-prefix)# " };
 
-static struct seg6_sid *sid_lookup_by_vrf_action(struct srv6_locator *loc, const char *vrfname,
-						 enum seg6local_action_t sidaction)
-
-{
-	struct seg6_sid *sid = NULL;
-	struct listnode *node, *nnode;
-
-	if (!vrfname)
-		return NULL;
-
-	for (ALL_LIST_ELEMENTS(loc->sids, node, nnode, sid)) {
-		if (strcmp(sid->vrfName, vrfname) == 0 && (sid->sidaction == sidaction))
-			return sid;
-	}
-	return NULL;
-}
-
 static struct cmd_node srv6_encap_node = {
 	.name = "srv6-encap",
 	.node = SRV6_ENCAP_NODE,
@@ -1058,7 +1041,7 @@ DEFPY(locator_opcode, locator_opcode_cmd,
 		if (vrf)
 			ctx.vrf_id = vrf->vrf_id;
 	}
-	srv6_manager_get_sid_call(&srv6_sid, NULL, &ctx, &ipv6prefix, locator->name);
+	srv6_manager_get_sid_call(&srv6_sid, NULL, &ctx, &ipv6prefix.prefix, locator->name);
 
 	return CMD_SUCCESS;
 }
@@ -1078,6 +1061,7 @@ DEFPY(no_locator_opcode,
 	int ret = 0;
 	struct prefix_ipv6 ipv6prefix = { 0 };
 	struct srv6_sid_ctx ctx = {};
+	struct vrf *vrf = NULL;
 
 	if (argv_find(argv, argc, "end", &idx))
 		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END;
@@ -1104,7 +1088,7 @@ DEFPY(no_locator_opcode,
 		if (vrf)
 			ctx.vrf_id = vrf->vrf_id;
 	}
-	ctx.nh6 = ipv6prefix;
+	ctx.nh6 = ipv6prefix.prefix;
 	srv6_manager_release_sid_call(NULL, &ctx);
 	return CMD_SUCCESS;
 }
