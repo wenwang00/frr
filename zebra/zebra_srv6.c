@@ -2291,7 +2291,7 @@ static int srv6_manager_get_sid_internal(struct zebra_srv6_sid **sid,
 				      (*sid)->locator ? (*sid)->locator->name
 						      : NULL,
 				      ZAPI_SRV6_SID_ALLOCATED);
-	} else {
+	} else if (client) {
 		if (IS_ZEBRA_DEBUG_SRV6)
 			zlog_debug("%s: got new SRv6 SID for ctx %s: sid_value=%pI6 (func=%u) (proto=%u, instance=%u, sessionId=%u), notifying all clients",
 				   __func__,
