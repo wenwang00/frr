@@ -49,6 +49,14 @@ const char *seg6local_action2str(uint32_t action)
 		return "End.AM";
 	case ZEBRA_SEG6_LOCAL_ACTION_END_DT46:
 		return "End.DT46";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UN:
+		return "End.uN";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT4:
+		return "End.uDT4";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT6:
+		return "End.uDT6";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT46:
+		return "End.uDT46";
 	case ZEBRA_SEG6_LOCAL_ACTION_UNSPEC:
 		return "unspec";
 	default:

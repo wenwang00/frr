@@ -262,13 +262,6 @@ DEFUN (show_srv6_locator_detail,
 			vty_out(vty, "- prefix: %s, owner: %s\n", str,
 				zebra_route_string(chunk->proto));
 		}
-		vty_out(vty, "  sids:\n");
-		for (ALL_LIST_ELEMENTS_RO(locator->sids, sidnode, sid)) {
-			prefix2str(&sid->ipv6Addr, buf, sizeof(buf));
-			vty_out(vty, "   -opcode %s\n", buf);
-			vty_out(vty, "    sidaction %s\n", seg6local_action2str(sid->sidaction));
-			vty_out(vty, "    vrf %s\n", sid->vrfName);
-		}
 	}
 
 
@@ -986,18 +979,19 @@ DEFPY(no_srv6_sid_format_explicit,
 }
 
 
-DEFPY(locator_opcode, locator_opcode_cmd,
-      "opcode WORD <end | end-dt46 vrf VIEWVRFNAME | end-dt4 vrf VIEWVRFNAME | end-dt6 vrf VIEWVRFNAME>",
-      "Configure SRv6 locator prefix\n"
-      "Specify SRv6 locator hex opcode\n"
-      "Apply the code to an End SID\n"
-      "Apply the code to an End.DT46 SID\n"
+DEFPY(locator_sid, locator_sid_cmd,
+      "sid WORD behavior <uN | uDT4 vrf VIEWVRFNAME | uDT6 vrf VIEWVRFNAME | uDT46 vrf VIEWVRFNAME>",
+      "Configure static local sid\n"
+      "Specify SRv6 locator hex sid\n"
+      "Configure behavior\n"
+      "Apply the code to an End.uN SID\n"
+      "Apply the code to an End.uDT4 SID\n"
       "vrf\n"
       "vrf\n"
-      "Apply the code to an End.DT4 SID\n"
+      "Apply the code to an End.uDT6 SID\n"
       "vrf\n"
       "vrf\n"
-      "Apply the code to an End.DT6 SID\n"
+      "Apply the code to an End.uDT46 SID\n"
       "vrf\n"
       "vrf\n")
 {
@@ -1016,21 +1010,20 @@ DEFPY(locator_opcode, locator_opcode_cmd,
 		vty_out(vty, "Missing valid prefix.\n");
 		return CMD_WARNING;
 	}
-	if (argv_find(argv, argc, "end", &idx))
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END;
-	else if (argv_find(argv, argc, "end-dt46", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT46;
+	if (argv_find(argv, argc, "uN", &idx))
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UN;
+	else if (argv_find(argv, argc, "uDT4", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT4;
 		vrfName = argv[idx + 2]->arg;
-	} else if (argv_find(argv, argc, "end-dt4", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT4;
+	} else if (argv_find(argv, argc, "uDT6", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT6;
 		vrfName = argv[idx + 2]->arg;
-	} else if (argv_find(argv, argc, "end-dt6", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT6;
+	} else if (argv_find(argv, argc, "uDT46", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT46;
 		vrfName = argv[idx + 2]->arg;
 	}
 	prefix = argv[1]->arg;
 	ret = str2prefix_ipv6(prefix, &ipv6prefix);
-	apply_mask_ipv6(&ipv6prefix);
 	if (!ret) {
 		vty_out(vty, "Malformed IPv6 prefix\n");
 		return CMD_WARNING_CONFIG_FAILED;
@@ -1046,12 +1039,23 @@ DEFPY(locator_opcode, locator_opcode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFPY(no_locator_opcode,
-	  no_locator_opcode_cmd,
-	  "no opcode WORD <end | end-dt46 vrf VIEWVRFNAME | end-dt4 vrf VIEWVRFNAME | end-dt6 vrf VIEWVRFNAME>",
+DEFPY(no_locator_sid,
+      no_locator_sid_cmd,
+      "no sid WORD behavior <uN | uDT4 vrf VIEWVRFNAME | uDT6 vrf VIEWVRFNAME | uDT46 vrf VIEWVRFNAME>",
       NO_STR
-      "Configure SRv6 locator prefix\n"
-      "Specify SRv6 locator hex opcode\n")
+      "Configure SRv6 locator sid\n"
+      "Specify SRv6 locator hex sid\n"
+      "Configure behavior\n"
+      "Apply the code to an End.uN SID\n"
+      "Apply the code to an End.uDT4 SID\n"
+      "vrf\n"
+      "vrf\n"
+      "Apply the code to an End.uDT6 SID\n"
+      "vrf\n"
+      "vrf\n"
+      "Apply the code to an End.uDT46 SID\n"
+      "vrf\n"
+      "vrf\n")
 {
 	VTY_DECLVAR_CONTEXT(srv6_locator, locator);
 	enum seg6local_action_t sidaction = ZEBRA_SEG6_LOCAL_ACTION_UNSPEC;
@@ -1063,16 +1067,16 @@ DEFPY(no_locator_opcode,
 	struct srv6_sid_ctx ctx = {};
 	struct vrf *vrf = NULL;
 
-	if (argv_find(argv, argc, "end", &idx))
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END;
-	else if (argv_find(argv, argc, "end-dt46", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT46;
+	if (argv_find(argv, argc, "uN", &idx))
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UN;
+	else if (argv_find(argv, argc, "uDT4", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT4;
 		vrfName = argv[idx + 2]->arg;
-	} else if (argv_find(argv, argc, "end-dt4", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT4;
+	} else if (argv_find(argv, argc, "uDT6", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT6;
 		vrfName = argv[idx + 2]->arg;
-	} else if (argv_find(argv, argc, "end-dt6", &idx)) {
-		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_DT6;
+	} else if (argv_find(argv, argc, "uDT46", &idx)) {
+		sidaction = ZEBRA_SEG6_LOCAL_ACTION_END_UDT46;
 		vrfName = argv[idx + 2]->arg;
 	}
 
@@ -1096,11 +1100,13 @@ DEFPY(no_locator_opcode,
 static int zebra_sr_config(struct vty *vty)
 {
 	struct zebra_srv6 *srv6 = zebra_srv6_get_default();
-	struct listnode *node, *opcodenode;
+	struct listnode *node, *zctxnode;
 	struct srv6_locator *locator;
-	struct seg6_sid *sid;
+	struct zebra_srv6_sid_ctx *zctx;
 	struct srv6_sid_format *format;
+	struct vrf *vrf;
 	char str[256];
+	char sid_str[256];
 	bool display_source_srv6 = false;
 
 	if (srv6 && !IPV6_ADDR_SAME(&srv6->encap_src_addr, &in6addr_any))
@@ -1141,21 +1147,32 @@ static int zebra_sr_config(struct vty *vty)
 			vty_out(vty, "\n");
 			if (CHECK_FLAG(locator->flags, SRV6_LOCATOR_USID))
 				vty_out(vty, "    behavior usid\n");
-			for (ALL_LIST_ELEMENTS_RO(locator->sids, opcodenode, sid)) {
-				vty_out(vty, "     opcode %s", sid->sidstr);
-				if (sid->sidaction == ZEBRA_SEG6_LOCAL_ACTION_END)
-					vty_out(vty, " end");
-				else if (sid->sidaction == ZEBRA_SEG6_LOCAL_ACTION_END_DT4) {
-					vty_out(vty, " end-dt4");
-					vty_out(vty, " vrf %s", sid->vrfName);
-				} else if (sid->sidaction == ZEBRA_SEG6_LOCAL_ACTION_END_DT6) {
-					vty_out(vty, " end-dt6");
-					vty_out(vty, " vrf %s", sid->vrfName);
-				} else if (sid->sidaction == ZEBRA_SEG6_LOCAL_ACTION_END_DT46) {
-					vty_out(vty, " end-dt46");
-					vty_out(vty, " vrf %s", sid->vrfName);
+			for (ALL_LIST_ELEMENTS_RO(srv6->sids, zctxnode, zctx)) {
+				if (zctx->sid->locator == locator) {
+					vrf = vrf_lookup_by_id(zctx->ctx.vrf_id);
+					inet_ntop(AF_INET6, &zctx->sid->value,
+						  sid_str, sizeof(sid_str));
+					vty_out(vty, "    sid    %s", sid_str);
+					vty_out(vty, " behavior");
+					if (zctx->ctx.behavior == ZEBRA_SEG6_LOCAL_ACTION_END_UN)
+						vty_out(vty, " uN");
+					else if (zctx->ctx.behavior == ZEBRA_SEG6_LOCAL_ACTION_END_UDT4) {
+						vty_out(vty, " uDT4");
+						if (vrf)
+							vty_out(vty, " vrf %s", vrf->name);
+					} else if (zctx->ctx.behavior == ZEBRA_SEG6_LOCAL_ACTION_END_UDT6) {
+						vty_out(vty, " uDT6");
+						if (vrf)
+							vty_out(vty, " vrf %s", vrf->name);
+					} else if (zctx->ctx.behavior == ZEBRA_SEG6_LOCAL_ACTION_END_UDT46) {
+						vty_out(vty, " uDT46");
+						if (vrf)
+							vty_out(vty, " vrf %s", vrf->name);
+					}
+					vty_out(vty, "\n");
 				}
-				vty_out(vty, "\n");
+				else
+					continue;
 			}
 			vty_out(vty, "\n");
 			vty_out(vty, "    exit\n");
@@ -1265,8 +1282,8 @@ void zebra_srv6_vty_init(void)
 	/* Command for configuration */
 	install_element(SRV6_LOC_NODE, &locator_prefix_cmd);
 	//install_element(SRV6_LOC_NODE, &no_srv6_prefix_cmd);
-	install_element(SRV6_PREFIX_NODE, &locator_opcode_cmd);
-	install_element(SRV6_PREFIX_NODE, &no_locator_opcode_cmd);
+	install_element(SRV6_PREFIX_NODE, &locator_sid_cmd);
+	install_element(SRV6_PREFIX_NODE, &no_locator_sid_cmd);
 	install_element(SRV6_LOC_NODE, &locator_behavior_cmd);
 	install_element(SRV6_LOC_NODE, &locator_sid_format_cmd);
 	install_element(SRV6_LOC_NODE, &no_locator_sid_format_cmd);
