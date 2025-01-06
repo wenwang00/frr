@@ -10,6 +10,7 @@
 #include <zebra.h>
 #include "prefix.h"
 #include "json.h"
+#include "vrf.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -63,6 +64,11 @@ enum seg6local_action_t {
 	ZEBRA_SEG6_LOCAL_ACTION_END_AM       = 14,
 	ZEBRA_SEG6_LOCAL_ACTION_END_BPF      = 15,
 	ZEBRA_SEG6_LOCAL_ACTION_END_DT46     = 16,
+
+	ZEBRA_SEG6_LOCAL_ACTION_END_UDT6     = 19,
+	ZEBRA_SEG6_LOCAL_ACTION_END_UDT4     = 20,
+	ZEBRA_SEG6_LOCAL_ACTION_END_UDT46    = 21,
+	ZEBRA_SEG6_LOCAL_ACTION_END_UN       = 22,
 };
 
 /* Flavor operations for SRv6 End* Behaviors */
@@ -129,6 +135,7 @@ struct srv6_locator {
 	uint64_t current;
 	bool status_up;
 	struct list *chunks;
+	struct list *sids;
 
 	uint8_t flags;
 #define SRV6_LOCATOR_USID (1 << 0) /* The SRv6 Locator is a uSID Locator */
@@ -165,6 +172,13 @@ struct srv6_locator_chunk {
 	uint32_t session_id;
 
 	uint8_t flags;
+};
+
+struct seg6_sid {
+	enum seg6local_action_t sidaction;
+	char vrfName[VRF_NAMSIZ + 1];
+	struct prefix_ipv6 ipv6Addr;
+	char sidstr[PREFIX_STRLEN];
 };
 
 /*
@@ -366,6 +380,10 @@ static inline const char *srv6_sid_ctx2str(char *str, size_t size,
 	case ZEBRA_SEG6_LOCAL_ACTION_END_AS:
 	case ZEBRA_SEG6_LOCAL_ACTION_END_AM:
 	case ZEBRA_SEG6_LOCAL_ACTION_END_BPF:
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UN:
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT4:
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT6:
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT46:
 	default:
 		snprintf(str + len, size - len, " unknown(%s)", __func__);
 	}
@@ -378,6 +396,8 @@ int snprintf_seg6_segs(char *str,
 
 extern struct srv6_locator *srv6_locator_alloc(const char *name);
 extern struct srv6_locator_chunk *srv6_locator_chunk_alloc(void);
+extern struct seg6_sid *srv6_locator_sid_alloc(void);
+extern void srv6_locator_sid_free(struct seg6_sid *sid);
 extern void srv6_locator_free(struct srv6_locator *locator);
 extern void srv6_locator_chunk_list_free(void *data);
 extern void srv6_locator_chunk_free(struct srv6_locator_chunk **chunk);

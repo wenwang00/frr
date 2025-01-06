@@ -49,6 +49,14 @@ const char *seg6local_action2str(uint32_t action)
 		return "End.AM";
 	case ZEBRA_SEG6_LOCAL_ACTION_END_DT46:
 		return "End.DT46";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UN:
+		return "End.uN";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT4:
+		return "End.uDT4";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT6:
+		return "End.uDT6";
+	case ZEBRA_SEG6_LOCAL_ACTION_END_UDT46:
+		return "End.uDT46";
 	case ZEBRA_SEG6_LOCAL_ACTION_UNSPEC:
 		return "unspec";
 	default:
@@ -167,6 +175,8 @@ struct srv6_locator *srv6_locator_alloc(const char *name)
 	locator->chunks = list_new();
 	locator->chunks->del = srv6_locator_chunk_list_free;
 
+	locator->sids = list_new();
+
 	QOBJ_REG(locator, srv6_locator);
 	return locator;
 }
@@ -203,6 +213,20 @@ void srv6_locator_free(struct srv6_locator *locator)
 
 		XFREE(MTYPE_SRV6_LOCATOR, locator);
 	}
+}
+
+struct seg6_sid *srv6_locator_sid_alloc(void)
+{
+	struct seg6_sid *sid = NULL;
+
+	sid = XCALLOC(MTYPE_SRV6_LOCATOR_CHUNK, sizeof(struct seg6_sid));
+	strlcpy(sid->vrfName, "Default", sizeof(sid->vrfName));
+	return sid;
+}
+
+void srv6_locator_sid_free(struct seg6_sid *sid)
+{
+	XFREE(MTYPE_SRV6_LOCATOR_CHUNK, sid);
 }
 
 void srv6_locator_chunk_free(struct srv6_locator_chunk **chunk)

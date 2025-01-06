@@ -1726,6 +1726,10 @@ static bool _netlink_route_build_singlepath(const struct prefix *p,
 			case ZEBRA_SEG6_LOCAL_ACTION_END_AS:
 			case ZEBRA_SEG6_LOCAL_ACTION_END_AM:
 			case ZEBRA_SEG6_LOCAL_ACTION_END_BPF:
+			case ZEBRA_SEG6_LOCAL_ACTION_END_UN:
+			case ZEBRA_SEG6_LOCAL_ACTION_END_UDT4:
+			case ZEBRA_SEG6_LOCAL_ACTION_END_UDT6:
+			case ZEBRA_SEG6_LOCAL_ACTION_END_UDT46:
 			case ZEBRA_SEG6_LOCAL_ACTION_UNSPEC:
 				zlog_err("%s: unsupport seg6local behaviour action=%u",
 					 __func__,
