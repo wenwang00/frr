@@ -340,6 +340,27 @@ srv6_locator_chunk_detailed_json(const struct srv6_locator_chunk *chunk)
 	return jo_root;
 }
 
+json_object *srv6_locator_sid_detailed_json(const struct srv6_locator *locator,
+					    const struct seg6_sid *sid)
+{
+	json_object *jo_root = NULL;
+	char buf[256];
+
+	jo_root = json_object_new_object();
+
+	/* set sid */
+	prefix2str(&sid->ipv6Addr, buf, sizeof(buf));
+	json_object_string_add(jo_root, "sid", buf);
+
+	/* set behavior */
+	json_object_string_add(jo_root, "behavior", seg6local_action2str(sid->sidaction));
+
+	/* set vrf */
+	json_object_string_add(jo_root, "vrf", sid->vrfName);
+
+	return jo_root;
+}
+
 json_object *srv6_locator_json(const struct srv6_locator *loc)
 {
 	struct listnode *node;
@@ -416,10 +437,14 @@ json_object *srv6_locator_json(const struct srv6_locator *loc)
 json_object *srv6_locator_detailed_json(const struct srv6_locator *loc)
 {
 	struct listnode *node;
+	struct listnode *sidnode;
 	struct srv6_locator_chunk *chunk;
+	struct seg6_sid *sid = NULL;
 	json_object *jo_root = NULL;
 	json_object *jo_chunk = NULL;
 	json_object *jo_chunks = NULL;
+	json_object *jo_sid = NULL;
+	json_object *jo_sids = NULL;
 
 	jo_root = json_object_new_object();
 
@@ -483,6 +508,14 @@ json_object *srv6_locator_detailed_json(const struct srv6_locator *loc)
 	for (ALL_LIST_ELEMENTS_RO((struct list *)loc->chunks, node, chunk)) {
 		jo_chunk = srv6_locator_chunk_detailed_json(chunk);
 		json_object_array_add(jo_chunks, jo_chunk);
+	}
+
+	/* set sids */
+	jo_sids = json_object_new_array();
+	json_object_object_add(jo_root, "sids", jo_sids);
+	for (ALL_LIST_ELEMENTS_RO(loc->sids, sidnode, sid)) {
+		jo_sid = srv6_locator_sid_detailed_json(loc, sid);
+		json_object_array_add(jo_sids, jo_sid);
 	}
 
 	return jo_root;
