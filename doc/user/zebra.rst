@@ -894,6 +894,9 @@ and this section also helps that case.
    function development holds the owner of the chunk of this locator, and no
    other routing protocol will use this area.
 
+   Additionally, if a static local SID is configured,
+   it will also be displayed in this section.
+
 ::
 
    router# show segment-routing srv6 locator loc1 detail
@@ -901,12 +904,17 @@ and this section also helps that case.
    Prefix: 2001:db8:1:1::/64
    Chunks:
    - prefix: 2001:db8:1:1::/64, owner: system
+     sids:
+      -sid 2001:db8:1:1:fff1:11::/128
+       behavior End.uDT46
+       vrf Vrf1
 
    router# show segment-routing srv6 locator loc2 detail
    Name: loc2
    Prefix: 2001:db8:2:2::/64
    Chunks:
    - prefix: 2001:db8:2:2::/64, owner: sharp
+     sids:
 
 .. clicmd:: segment-routing
 
@@ -989,6 +997,43 @@ and this section also helps that case.
       locator loc1
        prefix 2001:db8:1:1::/64
       !
+   ...
+
+.. clicmd:: sid WORD behavior <uN|uDT4|uDT6|uDT46> [vrf VRF]
+
+   Specify the locator sid manually. Configuring a local sid in a purely static mode
+   by specifying the sid value would generate a unique mySID table entry.
+   This feature will support the configuration of static SRv6 decapsulation on the system.
+
+   It supports four parameter options, corresponding to the following functions:
+   End.uN, End.uDT4, End.uDT6, End.uDT46
+
+   When configuring the local sid, if the action is set to 'uN', no vrf should be set.
+   While for any other action, it is necessary to specify a specific vrf.
+
+::
+
+   router# configure terminal
+   router(config)# segment-routing
+   router(config-sr)# srv6
+   router(config-srv6)# locators
+   router(config-srv6-locators)# locator loc1
+   router(config-srv6-locator)# prefix fcbb:bbbb:1::/48 block-len 32 node-len 16 func-bits 16
+   router(config-srv6-locator)# sid fcbb:bbbb:1:fe01:: behavior uDT6 vrf Vrf1
+   router(config-srv6-locator)# sid fcbb:bbbb:1:fe02:abcd:: behavior uDT4 vrf Vrf1
+   router(config-srv6-locator)# sid fcbb:bbbb:1:fe03:abcd:abcd:: behavior uDT46 vrf Vrf2
+
+   router(config-srv6-locator)# show run
+   ...
+   segment-routing
+    srv6
+     locators
+      locator loc1
+       prefix fcbb:bbbb:1::/48 block-len 32 node-len 16 func-bits 16
+       sid    fcbb:bbbb:1:fe01:: behavior uDT6 vrf Vrf1
+       sid    fcbb:bbbb:1:fe02:abcd:: behavior uDT4 vrf Vrf1
+       sid    fcbb:bbbb:1:fe03:abcd:abcd:: behavior uDT46 vrf Vrf2
+       !
    ...
 
 .. clicmd:: behavior usid
